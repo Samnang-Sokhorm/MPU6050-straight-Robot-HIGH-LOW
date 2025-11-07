@@ -26,21 +26,32 @@ int FORWARD_SPEED = 240;
 float targetYaw = 0;
 bool firstRun = true;
 
+
 void setup() {
   Serial.begin(115200);
+  delay(500); // Give serial monitor time to open
+
   Wire.begin();
+  delay(100);
 
+  Serial.println(F("\nInitializing MPU6050..."));
   byte status = mpu.begin();
-  Serial.print(F("MPU6050 status: "));
-  Serial.println(status);
-  while (status != 0) { } // stop everything if could not connect to MPU6050
-  
-  Serial.println(F("Calculating offsets, do not move MPU6050"));
-  delay(1000); // Added delay for stability
-  mpu.calcOffsets(); // gyro and accelero
-  Serial.println("Done!\n");
 
-  // Motor pins setup
+  if (status != 0) {
+    Serial.print(F("MPU6050 connection failed with status: "));
+    Serial.println(status);
+    Serial.println(F("Check wiring & restart."));
+    while (true) {
+      delay(500);
+    }
+  }
+
+  Serial.println(F("Calculating offsets, keep MPU still..."));
+  delay(1500);
+  mpu.calcOffsets();
+  Serial.println(F("Offsets done!"));
+
+  // Setup motor pins
   pinMode(M1_pwm, OUTPUT);
   pinMode(M1_dir, OUTPUT);
   pinMode(M2_pwm, OUTPUT);
@@ -52,17 +63,13 @@ void setup() {
 
   stopRobot();
 
-  // Get initial yaw and set as target
   mpu.update();
   targetYaw = mpu.getAngleZ();
 
-  Serial.print("Initial target yaw set to: ");
+  Serial.print(F("Initial target yaw: "));
   Serial.println(targetYaw);
 
-
-
-  // START DRIVING FORWARD IMMEDIATELY
-  Serial.println("STARTING FORWARD DRIVE WITH CORRECTION");
+  Serial.println(F("Starting forward drive with correction..."));
 }
 
 void loop() {
